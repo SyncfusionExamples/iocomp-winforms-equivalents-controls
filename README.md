@@ -7,7 +7,19 @@ This sample shows Syncfusion WinForms equivalents for the 56 iocomp .NET WinForm
 | Project | Description |
 |---|---|
 | `src/PocApp` | WinForms sample app. It has one tab per category (Plot, Gauges, Digital, Clocks, Inputs, Switches, Leds, Process) and a **Gap register** tab that lists each iocomp control with its Syncfusion equivalent, rating and gaps. |
-| `src/HmiControls` | Small custom controls for iocomp features that have no Syncfusion equivalent: `SwitchRotary`, the selector switches (`SwitchPanel`, `SwitchQuad`, `SwitchSlider`), `Led`, `LedArrow`, `MatrixLeds`, `Odometer`, `Pipe`, `PipeJoint`, `Valve`, `Motor`, `RotationDisplay`. |
+| `src/HmiControls` | Small custom controls for iocomp features that have no Syncfusion equivalent: `SwitchQuad`, `Led`, `LedArrow`, `MatrixLeds`, `Odometer`, `Pipe`, `PipeJoint`, `Valve`, `Motor`, `RotationDisplay`. |
+
+### Switches with no equivalent, built on Syncfusion controls
+
+Some iocomp switches have no Syncfusion equivalent but are built on a Syncfusion control with custom painting (in `src/PocApp/Cards`). The Syncfusion control keeps the state, events and keyboard handling. These are rated "N - no equivalent" and labelled "stand-in" in the gap register.
+
+| iocomp control | Built on | Positions |
+|---|---|---|
+| SwitchRocker | `ToggleButton` + `IToggleButtonRenderer` | 2 |
+| SwitchLever | `CheckBoxAdv` + custom paint | 2 |
+| SwitchRocker3Way, SwitchRotary, SwitchPanel, SwitchSlider | `CheckBoxAdv` (Tristate) + custom paint, sharing the `ThreePositionBox` base | 3 |
+
+A tristate `CheckBoxAdv` holds three states, so SwitchRotary, SwitchPanel and SwitchSlider are limited to three positions (iocomp allows any number). `CheckState` maps to position 0, 1 and 2 as Unchecked, Indeterminate and Checked. SwitchQuad has four positions, so it stays a custom control in `HmiControls`.
 | `iocomp-dotnet-images` | iocomp reference images, shown beside each control. |
 
 ## Requirements

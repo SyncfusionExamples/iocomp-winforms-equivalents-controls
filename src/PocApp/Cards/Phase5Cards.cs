@@ -8,7 +8,7 @@ using Label = System.Windows.Forms.Label;
 
 namespace PocApp.Cards;
 
-/// <summary>Remaining E cards (SwitchToggle, SwitchLed, MatrixButtons, PhonePad, ObjectCanvas) and the stand-ins for two N switches.</summary>
+/// <summary>Remaining E cards (SwitchToggle, SwitchLed, MatrixButtons, PhonePad, ObjectCanvas) and the stand-ins for the N switches built on Syncfusion controls.</summary>
 public static class Phase5Cards
 {
     public static void Register()
@@ -28,9 +28,26 @@ public static class Phase5Cards
 
         // N stand-ins. Rocker: ToggleButton + custom renderer. Rocker3Way / Lever: CheckBoxAdv with custom painting.
         Phase2Cards.Add("SwitchRocker", () => IocompToggle(ToggleLook.Rocker, "Rocker switch"));
-        Phase2Cards.Add("SwitchRocker3Way", () => WithState(new Rocker3WayBox { CheckState = CheckState.Indeterminate, AccessibleName = "Three-way rocker switch" },
-            b => b.CheckState switch { CheckState.Checked => "Up", CheckState.Indeterminate => "Centre", _ => "Down" }));
+        Phase2Cards.Add("SwitchRocker3Way", () => WithState(new Rocker3WayBox { AccessibleName = "Three-way rocker switch" }, b => b.SelectedItem));
         Phase2Cards.Add("SwitchLever", () => WithState(new LeverBox { Checked = true, AccessibleName = "Lever switch" }, b => b.Checked ? "Up (on)" : "Down (off)"));
+
+        // Three-position selectors on a tristate CheckBoxAdv (see ThreePositionBox).
+        Phase2Cards.Add("SwitchRotary", () => WithState(new RotaryBox { AccessibleName = "Rotary switch" }, b => b.SelectedItem));
+        Phase2Cards.Add("SwitchPanel", () => FixedWithReadout(new PanelDialBox { AccessibleName = "Panel switch" }, new Size(120, 170)));
+        Phase2Cards.Add("SwitchSlider", () => FixedWithReadout(new SliderSwitchBox { AccessibleName = "Slider switch" }, new Size(170, 160)));
+    }
+
+    // Fixed size with the readout to the right: these looks distort when stretched to the slot.
+    private static Control FixedWithReadout(ThreePositionBox box, Size size)
+    {
+        var readout = new Label { AutoSize = true, ForeColor = Color.DimGray, Text = "Selected: " + box.SelectedItem };
+        box.CheckStateChanged += (_, _) => readout.Text = "Selected: " + box.SelectedItem;
+        box.Size = size;
+        box.Location = new Point(8, 4);
+        readout.Location = new Point(box.Right + 12, 8);
+        var host = new Panel();
+        host.Controls.AddRange([box, readout]);
+        return host;
     }
 
     // ToggleButton keeps state, click/keyboard toggling and ToggleStateChanged; the renderer only paints.

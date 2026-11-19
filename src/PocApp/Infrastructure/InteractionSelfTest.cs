@@ -80,23 +80,30 @@ public static class InteractionSelfTest
             });
         }
 
-        // ---- Rocker3Way: press the half you want; one step per press; arrow keys.
+        // ---- Rocker3Way (ThreePositionBox): press the half you want; one step per press; arrow keys.
+        // A full click (down, up, OnClick) also checks that CheckBoxAdv's own click cycling stays off.
         Test("SwitchRocker3Way", "top half steps up, bottom half steps down, arrows work", () =>
         {
-            var r = Host(new Rocker3WayBox { CheckState = CheckState.Indeterminate }, new Size(70, 130));
+            var r = Host(new Rocker3WayBox(), new Size(70, 130));
             var fired = 0;
             r.CheckStateChanged += (_, _) => fired++;
-            Mouse(r, "OnMouseUp", 35, 20);
-            var afterTop = r.CheckState;
-            Mouse(r, "OnMouseUp", 35, 20);
-            var stillTop = r.CheckState;
-            Mouse(r, "OnMouseUp", 35, 110);
-            Mouse(r, "OnMouseUp", 35, 110);
-            var afterBottom = r.CheckState;
+            void Click(int y)
+            {
+                Mouse(r, "OnMouseDown", 35, y);
+                Mouse(r, "OnMouseUp", 35, y);
+                Invoke(r, "OnClick", EventArgs.Empty);
+            }
+            Click(20);
+            var afterTop = r.SelectedItem;
+            Click(20);
+            var stillTop = r.SelectedItem;
+            Click(110);
+            Click(110);
+            var afterBottom = r.SelectedItem;
             Key(r, Keys.Up);
-            var afterKey = r.CheckState;
-            return afterTop == CheckState.Checked && stillTop == CheckState.Checked && afterBottom == CheckState.Unchecked
-                   && afterKey == CheckState.Indeterminate && fired == 4
+            var afterKey = r.SelectedItem;
+            return afterTop == "Up" && stillTop == "Up" && afterBottom == "Down" && afterKey == "Centre"
+                   && r.CheckState == CheckState.Indeterminate && fired == 4
                 ? null : $"top {afterTop}/{stillTop}, bottom {afterBottom}, Up key {afterKey}, events {fired}";
         });
 
@@ -111,23 +118,39 @@ public static class InteractionSelfTest
             return !l.Checked && fired == 1 ? null : $"Checked={l.Checked}, events {fired}";
         });
 
-        // ---- Selector switches (HmiControls): hit testing via real mouse handlers, plus keyboard.
-        Test("SwitchRotary", "click on a position label selects it; arrow keys move", () =>
+        // ---- Three-position selectors (tristate CheckBoxAdv): position 0/1/2 = Unchecked/Indeterminate/Checked.
+        Test("SwitchRotary", "arrow keys move one position and fire CheckStateChanged", () =>
         {
-            var s = Host(new SwitchRotary(), new Size(256, 190));
+            var s = Host(new RotaryBox { SelectedIndex = 0 }, new Size(256, 190));
             var fired = 0;
-            s.SelectedIndexChanged += (_, _) => fired++;
-            s.SelectedIndex = 0;
-            fired = 0;
+            s.CheckStateChanged += (_, _) => fired++;
             Key(s, Keys.Right);
-            var afterKey = s.SelectedIndex;
-            return afterKey == 1 && fired == 1 ? null : $"after Right key index {afterKey}, events {fired}";
+            return s.SelectedIndex == 1 && s.CheckState == CheckState.Indeterminate && fired == 1
+                ? null : $"after Right key index {s.SelectedIndex} ({s.CheckState}), events {fired}";
+        });
+
+        // Clicks select the position under the mouse; CheckBoxAdv's own click cycling must not run as well.
+        Test("SwitchRotary", "clicking each position selects it", () =>
+        {
+            var s = Host(new RotaryBox(), new Size(256, 190));
+            using var bmp = new Bitmap(s.Width, s.Height);
+            s.DrawToBitmap(bmp, new Rectangle(Point.Empty, s.Size)); // the pivot is worked out while painting
+            var seen = new List<string>();
+            foreach (var p in new[] { new Point(20, 125), new Point(150, 30), new Point(100, 40) })
+            {
+                Mouse(s, "OnMouseDown", p.X, p.Y);
+                Mouse(s, "OnMouseUp", p.X, p.Y);
+                Invoke(s, "OnClick", EventArgs.Empty);
+                seen.Add(s.SelectedItem);
+                s.DrawToBitmap(bmp, new Rectangle(Point.Empty, s.Size));
+            }
+            return string.Join(",", seen) == "Low,High,Medium" ? null : "saw " + string.Join(",", seen);
         });
 
         // Regression: selecting Low (pointer at 180 deg) used to throw in OnPaint and close the app.
         Test("SwitchRotary", "every position paints without error", () =>
         {
-            var s = Host(new SwitchRotary(), new Size(259, 144));
+            var s = Host(new RotaryBox(), new Size(259, 144));
             using var bmp = new Bitmap(s.Width, s.Height);
             for (var i = 0; i < s.Items.Length; i++)
             {
@@ -137,6 +160,49 @@ public static class InteractionSelfTest
             return null;
         });
 
+        // Regression: the drawing used to re-centre on each selection, so a mouse held still flipped Low/Medium on every repaint.
+        Test("SwitchRotary", "holding the mouse still keeps the selection", () =>
+        {
+            var s = Host(new RotaryBox(), new Size(256, 190));
+            using var bmp = new Bitmap(s.Width, s.Height);
+            s.DrawToBitmap(bmp, new Rectangle(Point.Empty, s.Size));
+            Mouse(s, "OnMouseDown", 0, 48);
+            var seen = new List<string> { s.SelectedItem };
+            for (var k = 0; k < 4; k++)
+            {
+                s.DrawToBitmap(bmp, new Rectangle(Point.Empty, s.Size));
+                Mouse(s, "OnMouseMove", 0, 48);
+                seen.Add(s.SelectedItem);
+            }
+            return seen.Distinct().Count() == 1 ? null : "selection changed: " + string.Join(" -> ", seen);
+        });
+
+        Test("SwitchPanel", "clicking each label selects it", () =>
+        {
+            var sp = Host(new PanelDialBox(), new Size(181, 256));
+            var seen = new List<string>();
+            foreach (var p in new[] { new Point(40, 48), new Point(90, 16), new Point(140, 48) })
+            {
+                Mouse(sp, "OnMouseDown", p.X, p.Y);
+                Mouse(sp, "OnMouseUp", p.X, p.Y);
+                Invoke(sp, "OnClick", EventArgs.Empty);
+                seen.Add(sp.SelectedItem);
+            }
+            return string.Join(",", seen) == "On,Off,Auto" ? null : "saw " + string.Join(",", seen);
+        });
+
+        Test("SwitchSlider", "clicking near a position snaps to it; keys move", () =>
+        {
+            var ss = Host(new SliderSwitchBox(), new Size(200, 200));
+            Mouse(ss, "OnMouseDown", 15, 190);
+            Mouse(ss, "OnMouseUp", 15, 190);
+            Invoke(ss, "OnClick", EventArgs.Empty);
+            var bottom = ss.SelectedItem;
+            Key(ss, Keys.Up);
+            return bottom == "Low" && ss.SelectedItem == "Medium" ? null : $"bottom click {bottom}, after Up {ss.SelectedItem}";
+        });
+
+        // ---- Selector switch (HmiControls): four positions, more than a tristate CheckBoxAdv can hold.
         Test("SwitchQuad", "pressing each arm selects Up/Right/Down/Left", () =>
         {
             var q = Host(new SwitchQuad(), new Size(120, 120));
@@ -148,27 +214,6 @@ public static class InteractionSelfTest
             }
             Key(q, Keys.Up);
             return string.Join(",", seen) == "Up,Right,Down,Left" && q.SelectedItem == "Up" ? null : "saw " + string.Join(",", seen) + ", after Up key " + q.SelectedItem;
-        });
-
-        Test("SwitchPanel", "clicking each label selects it", () =>
-        {
-            var sp = Host(new SwitchPanel(), new Size(181, 256));
-            var seen = new List<string>();
-            foreach (var p in new[] { new Point(40, 48), new Point(90, 16), new Point(140, 48) })
-            {
-                Mouse(sp, "OnMouseDown", p.X, p.Y);
-                seen.Add(sp.SelectedItem);
-            }
-            return string.Join(",", seen) == "On,Off,Auto" ? null : "saw " + string.Join(",", seen);
-        });
-
-        Test("SwitchSlider", "clicking near a position snaps to it; keys move", () =>
-        {
-            var ss = Host(new SwitchSlider(), new Size(200, 200));
-            Mouse(ss, "OnMouseDown", 15, 190);
-            var bottom = ss.SelectedItem;
-            Key(ss, Keys.Up);
-            return bottom == "Low" && ss.SelectedItem == "Medium" ? null : $"bottom click {bottom}, after Up {ss.SelectedItem}";
         });
 
         // ---- Indicators and process symbols.

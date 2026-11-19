@@ -12,11 +12,10 @@ public static class Phase4Cards
     {
         Phase2Cards.Add("Led", () => LedPanel());
         Phase2Cards.Add("Odometer", () => OdometerPanel());
-        Phase2Cards.Add("SwitchRotary", () => RotaryPanel());
         Phase2Cards.Add("Pipe", () => PipeValveScene());
         Phase2Cards.Add("Valve", () => PipeValveScene());
 
-        // Second batch of prototypes (former placeholders), plus SwitchSlider which replaces the TrackBarEx stand-in.
+        // Second batch of prototypes (former placeholders).
         Phase2Cards.Add("LedArrow", () =>
         {
             var a = new LedArrow { Width = 128, Height = 64, AccessibleName = "Arrow indicator driven by the step signal" };
@@ -35,8 +34,6 @@ public static class Phase4Cards
             });
         });
         Phase2Cards.Add("SwitchQuad", () => WithReadout(new SwitchQuad { Size = new Size(140, 140), AccessibleName = "Four-way switch" }));
-        Phase2Cards.Add("SwitchPanel", () => WithReadout(new SwitchPanel { Size = new Size(120, 170), AccessibleName = "Panel switch" }));
-        Phase2Cards.Add("SwitchSlider", () => WithReadout(new SwitchSlider { Size = new Size(170, 160), AccessibleName = "Slider switch" }));
         Phase2Cards.Add("RotationDisplay", () =>
         {
             var path = Path.Combine(AppContext.BaseDirectory, "iocomp-dotnet-images", "Label.png");
@@ -113,19 +110,6 @@ public static class Phase4Cards
             odo.Value = v;
             standIn.Value = ((long)v).ToString("D6");
         });
-    }
-
-    private static Control RotaryPanel()
-    {
-        var host = new TableLayoutPanel { ColumnCount = 1, RowCount = 2 };
-        host.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        host.RowStyles.Add(new RowStyle(SizeType.Absolute, 22));
-        var rotary = new SwitchRotary { Dock = DockStyle.Fill, AccessibleName = "Rotary switch" };
-        var readout = new Label { Dock = DockStyle.Fill, Text = "Selected: Medium", ForeColor = Color.DimGray };
-        rotary.SelectedIndexChanged += (_, _) => readout.Text = "Selected: " + rotary.SelectedItem;
-        host.Controls.Add(rotary, 0, 0);
-        host.Controls.Add(readout, 0, 1);
-        return host;
     }
 
     // One scene for both Pipe and Valve: inlet pipe -> valve -> outlet pipe. Closing the valve stops the outlet flow.

@@ -6,8 +6,8 @@ namespace PocApp.Cards;
 // iocomp-style switches on top of Syncfusion controls:
 //  - two-state switches: ToggleButton + a custom IToggleButtonRenderer (the documented extension point);
 //    ToggleButton keeps the state, click/keyboard handling and ToggleStateChanged.
-//  - three-state rocker and lever: CheckBoxAdv (CheckState / Tristate / CheckStateChanged) with OnPaint
-//    overridden, because CheckBoxAdv has no renderer interface.
+//  - lever: CheckBoxAdv (Checked / CheckedChanged) with OnPaint overridden, because CheckBoxAdv has no renderer
+//    interface. The three-position switches, including the three-way rocker, are in ThreePositionSwitches.cs.
 // "On" is ToggleState.Active / CheckState.Checked throughout.
 
 internal static class SwitchDraw
@@ -133,69 +133,6 @@ internal sealed class IocompToggleRenderer(ToggleLook look) : IToggleButtonRende
         RightToLeft righttoLeft, bool isMouseMove, bool isMouseHover, ToggleButton toggleButton)
     {
         // The iocomp looks have no sliding thumb; the whole state is drawn in DrawButton.
-    }
-}
-
-/// <summary>
-/// CheckBoxAdv painted as the iocomp three-way rocker: up = Checked, centre = Indeterminate, down = Unchecked.
-/// Like a real rocker, pressing a half moves one step toward it (down -> centre -> up, or the reverse);
-/// Up/Down arrow keys do the same. CheckBoxAdv's own click cycling is turned off (AutoCheck = false).
-/// </summary>
-internal sealed class Rocker3WayBox : CheckBoxAdv
-{
-    public Rocker3WayBox()
-    {
-        Tristate = true;
-        AutoCheck = false;
-        Text = "";
-        SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.ResizeRedraw, true);
-    }
-
-    /// <summary>Moves one position toward the top (up = true) or bottom half.</summary>
-    public void Press(bool up) => CheckState = (CheckState, up) switch
-    {
-        (CheckState.Unchecked, true) => CheckState.Indeterminate,
-        (CheckState.Indeterminate, true) => CheckState.Checked,
-        (CheckState.Checked, false) => CheckState.Indeterminate,
-        (CheckState.Indeterminate, false) => CheckState.Unchecked,
-        _ => CheckState,
-    };
-
-    protected override void OnMouseUp(MouseEventArgs e)
-    {
-        base.OnMouseUp(e);
-        if (e.Button != MouseButtons.Left || !ClientRectangle.Contains(e.Location)) return;
-        var r = SwitchDraw.Fit(ClientRectangle, 138f / 256);
-        Press(up: e.Y < r.Top + r.Height / 2);
-    }
-
-    protected override bool IsInputKey(Keys keyData) => keyData is Keys.Up or Keys.Down || base.IsInputKey(keyData);
-
-    protected override void OnKeyDown(KeyEventArgs e)
-    {
-        if (e.KeyCode is Keys.Up or Keys.Down) { Press(up: e.KeyCode == Keys.Up); e.Handled = true; return; }
-        base.OnKeyDown(e);
-    }
-
-    protected override void OnPaint(PaintEventArgs e)
-    {
-        var g = e.Graphics;
-        using (var back = new SolidBrush(Parent?.BackColor ?? SwitchDraw.Face))
-            g.FillRectangle(back, ClientRectangle);
-        var r = SwitchDraw.Fit(ClientRectangle, 138f / 256);
-        using (var outline = new Pen(Color.Black))
-            g.DrawRectangle(outline, r.X, r.Y, r.Width - 1, r.Height - 1);
-        var inner = Rectangle.Inflate(r, -2, -2);
-        var half = inner.Height / 2;
-        var pressed = Color.FromArgb(180, 180, 180);
-        var raised = Color.FromArgb(247, 247, 247);
-        using (var top = new SolidBrush(CheckState == CheckState.Checked ? pressed : raised))
-            g.FillRectangle(top, inner.X, inner.Y, inner.Width, half);
-        using (var bottom = new SolidBrush(CheckState == CheckState.Unchecked ? pressed : raised))
-            g.FillRectangle(bottom, inner.X, inner.Y + half, inner.Width, inner.Height - half);
-        SwitchDraw.Bevel(g, new Rectangle(inner.X, inner.Y, inner.Width, half), CheckState != CheckState.Checked);
-        SwitchDraw.Bevel(g, new Rectangle(inner.X, inner.Y + half, inner.Width, inner.Height - half), CheckState != CheckState.Unchecked);
-        if (Focused) ControlPaint.DrawFocusRectangle(g, Rectangle.Inflate(r, -4, -4));
     }
 }
 
