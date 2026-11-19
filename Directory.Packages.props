@@ -1,0 +1,14 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <SyncfusionVersion>35.2.12</SyncfusionVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageVersion Include="Syncfusion.Chart.Windows" Version="35.2.12" />
+    <PackageVersion Include="Syncfusion.Gauge.Windows" Version="35.2.12" />
+    <PackageVersion Include="Syncfusion.Tools.Windows" Version="35.2.12" />
+    <PackageVersion Include="Syncfusion.Shared.Windows" Version="100.2.1514" />
+    <PackageVersion Include="Syncfusion.Diagram.Windows" Version="35.2.12" />
+    <PackageVersion Include="Syncfusion.Licensing" Version="35.2.12" />
+  </ItemGroup>
+</Project>

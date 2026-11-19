@@ -1,0 +1,6 @@
+bin/
+obj/
+.vs/
+*.user
+_probe_tmp/
+snapshots_current/
