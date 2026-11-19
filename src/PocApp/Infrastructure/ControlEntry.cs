@@ -38,6 +38,12 @@ public sealed record ControlEntry(
 
     public Approach Approach { get; init; } = Approach.Placeholder;
 
+    /// <summary>N control shown with a custom-drawn stand-in on a Syncfusion control (renderer or OnPaint), not a new control.</summary>
+    public bool IsSyncfusionStandIn => Rating == Rating.N && Approach is Approach.CustomRenderer or Approach.CustomPaint;
+
+    /// <summary>"prototype", "stand-in" or empty: what the demo built for an N control.</summary>
+    public string BuiltText => BuiltInPoc ? "prototype" : IsSyncfusionStandIn ? "stand-in" : "";
+
     public string EffortText => EffortSource == EffortSource.None
         ? "-"
         : $"{EffortMinDays:0.#}-{EffortMaxDays:0.#} days ({EffortSource.ToString().ToLowerInvariant()})";

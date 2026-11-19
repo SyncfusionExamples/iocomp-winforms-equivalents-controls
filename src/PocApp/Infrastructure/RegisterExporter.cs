@@ -25,7 +25,7 @@ public static class RegisterExporter
         sb.AppendLine("| Control | FR title | Priority | Effort | Built | Approach | Look | Notes |");
         sb.AppendLine("|---|---|---|---|---|---|---|---|");
         foreach (var e in entries.Where(x => x.FrCandidate).OrderBy(x => x.Priority).ThenBy(x => x.Name))
-            sb.AppendLine($"| {e.Name} | {e.FrTitle} | {e.Priority} | {e.EffortText} | {(e.BuiltInPoc ? "yes" : "no")} | {Approach(e)} | {Look(e)} | {e.InternalNotes} |");
+            sb.AppendLine($"| {e.Name} | {e.FrTitle} | {e.Priority} | {e.EffortText} | {(e.BuiltText is "" ? "no" : e.BuiltText)} | {Approach(e)} | {Look(e)} | {e.InternalNotes} |");
 
         sb.AppendLine();
         sb.AppendLine("## Extend (E) controls");
@@ -52,6 +52,7 @@ public static class RegisterExporter
         sb.AppendLine("# iocomp to Syncfusion WinForms: Migration Summary");
         sb.AppendLine();
         sb.AppendLine("A = available as-is, E = available with customization, N = no direct equivalent today.");
+        sb.AppendLine("For N controls, a Syncfusion stand-in is an existing Syncfusion control with custom drawing that keeps its state and events; a prototype is a new control written for this demo.");
         sb.AppendLine("Approach = how the demo achieves it. Effort ranges are estimates.");
         sb.AppendLine(LookNote);
         sb.AppendLine();
@@ -68,7 +69,7 @@ public static class RegisterExporter
     public static string SummaryLine(IReadOnlyList<ControlEntry> entries) =>
         $"Total controls: {entries.Count} | As-is: {entries.Count(x => x.Rating == Rating.A)} | " +
         $"Extend: {entries.Count(x => x.Rating == Rating.E)} | No equivalent: {entries.Count(x => x.Rating == Rating.N)} " +
-        $"({entries.Count(x => x.BuiltInPoc)} built as prototypes) | Look: " +
+        $"({entries.Count(x => x.BuiltInPoc)} prototypes, {entries.Count(x => x.IsSyncfusionStandIn)} Syncfusion stand-ins) | Look: " +
         string.Join(", ", new[] { Fidelity.Close, Fidelity.Acceptable, Fidelity.Different, Fidelity.None }
             .Select(f => $"{ControlCard.FidelityText(f)} {entries.Count(x => x.Fidelity == f)}"));
 

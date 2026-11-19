@@ -57,7 +57,9 @@ public sealed class ControlCard : Panel
         {
             Rating.A => "A - as-is",
             Rating.E => "E - extend",
-            _ => Entry.BuiltInPoc ? "N - no equivalent (prototype built)" : "N - no equivalent",
+            _ when Entry.BuiltInPoc => "N - no equivalent (prototype built)",
+            _ when Entry.IsSyncfusionStandIn => "N - no equivalent (stand-in)",
+            _ => "N - no equivalent",
         };
 
         var panel = new FlowLayoutPanel { Dock = DockStyle.Fill, WrapContents = false };
@@ -79,7 +81,8 @@ public sealed class ControlCard : Panel
         });
         panel.Controls.Add(new Label
         {
-            Text = Entry.SyncfusionControl,
+            // The badge already says "stand-in"; repeating it here pushed the Look chip off the card.
+            Text = Entry.IsSyncfusionStandIn ? Entry.SyncfusionControl.Replace(" (stand-in)", "") : Entry.SyncfusionControl,
             AutoSize = true,
             ForeColor = Color.DimGray,
             Margin = new Padding(0, 5, 12, 0),

@@ -86,7 +86,7 @@ public sealed class GapRegisterPage : UserControl
                 Effort = e.EffortText,
                 e.Priority,
                 FR = e.FrCandidate ? e.FrTitle : "",
-                Built = e.BuiltInPoc ? "yes" : "",
+                Built = e.BuiltText,
             })
             .ToList();
 
