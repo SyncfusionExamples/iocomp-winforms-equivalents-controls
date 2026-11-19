@@ -1,0 +1,12 @@
+bin/
+obj/
+.vs/
+*.user
+_probe_tmp/
+snapshots_current/
+ 
+# Reports, generated docs and snapshots stay local 
+/docs/ 
+/snapshots/ 
+/GAP_ANALYSIS.md 
+/POC_SPEC.md 
