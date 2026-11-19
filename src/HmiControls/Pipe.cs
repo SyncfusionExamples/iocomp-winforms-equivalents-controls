@@ -24,7 +24,7 @@ public class Pipe : Control
                  | ControlStyles.ResizeRedraw, true);
         Size = new Size(260, 31);
         _timer.Tick += (_, _) => Advance();
-        _timer.Start();
+        if (Animation.Enabled) _timer.Start();
     }
 
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]

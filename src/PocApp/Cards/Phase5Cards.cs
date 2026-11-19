@@ -31,7 +31,6 @@ public static class Phase5Cards
         Phase2Cards.Add("SwitchRocker3Way", () => WithState(new Rocker3WayBox { CheckState = CheckState.Indeterminate, AccessibleName = "Three-way rocker switch" },
             b => b.CheckState switch { CheckState.Checked => "Up", CheckState.Indeterminate => "Centre", _ => "Down" }));
         Phase2Cards.Add("SwitchLever", () => WithState(new LeverBox { Checked = true, AccessibleName = "Lever switch" }, b => b.Checked ? "Up (on)" : "Down (off)"));
-        Phase2Cards.Add("SwitchSlider", () => ThreePosition());
     }
 
     // ToggleButton keeps state, click/keyboard toggling and ToggleStateChanged; the renderer only paints.
@@ -103,27 +102,36 @@ public static class Phase5Cards
         return grid;
     }
 
-    // Three-position switch built from TrackBarEx: shows the nearest Syncfusion control, without labelled positions.
-    private static Control ThreePosition()
-    {
-        var host = new Panel();
-        var bar = new TrackBarEx { Minimum = 0, Maximum = 2, Value = 1, LargeChange = 1, SmallChange = 1, Orientation = Orientation.Vertical, Size = new Size(40, 120), Location = new Point(12, 6) };
-        var label = new Label { AutoSize = true, Location = new Point(64, 52), Text = "Position: 1 (Medium)" };
-        string[] names = ["Low", "Medium", "High"];
-        bar.ValueChanged += (_, _) => label.Text = $"Position: {bar.Value} ({names[bar.Value]})";
-        host.Controls.AddRange([bar, label]);
-        return host;
-    }
-
-    // Diagram scene with a few shapes; the second variant rotates one, which is what iocomp's ObjectCanvas demonstrates.
+    // Diagram scene. Default: two plain shapes. Restyled (iocomp ObjectCanvas): "Sample Text", a yellow rectangle and
+    // an open arc that spins, driven by the shared simulator so the canvas content changes at runtime.
     private static Control DiagramCanvas(bool rotated = false)
     {
         var model = new Model();
-        var box = new DRectangle(10, 10, 90, 50) { FillStyle = { Color = Color.LightSteelBlue } };
-        var box2 = new DRectangle(130, 30, 90, 50) { FillStyle = { Color = Color.Khaki } };
-        if (rotated) box2.Rotate(20);
+        if (!rotated)
+        {
+            model.AppendChild(new DRectangle(10, 10, 90, 50) { FillStyle = { Color = Color.LightSteelBlue } });
+            model.AppendChild(new DRectangle(130, 30, 90, 50) { FillStyle = { Color = Color.Khaki } });
+            return new Diagram { Model = model, BackColor = Color.White };
+        }
+
+        model.BackgroundStyle.Color = Color.FromArgb(240, 240, 240);
+        var text = new TextNode("Sample Text", new RectangleF(8, 6, 170, 34)) { HorizontalAlignment = StringAlignment.Near };
+        text.FontStyle.Family = "Segoe UI";
+        text.FontStyle.Size = 18;
+        text.LineStyle.LineColor = Color.Transparent;
+        var box = new DRectangle(120, 45, 45, 95) { FillStyle = { Color = Color.Yellow } };
+        box.LineStyle.LineColor = Color.Black;
+        var spinner = new Ellipse(30, 95, 34, 34) { FillStyle = { Color = Color.Transparent } };
+        spinner.LineStyle.LineColor = Color.FromArgb(50, 50, 50);
+        spinner.LineStyle.LineWidth = 1.5f;
+        spinner.LineStyle.DashStyle = System.Drawing.Drawing2D.DashStyle.Dash;
+        model.AppendChild(text);
         model.AppendChild(box);
-        model.AppendChild(box2);
-        return new Diagram { Model = model, BackColor = Color.White };
+        model.AppendChild(spinner);
+        var diagram = new Diagram { Model = model, BackColor = Color.FromArgb(240, 240, 240) };
+        diagram.View.Grid.Visible = false; // iocomp's canvas has no design grid
+        diagram.View.BackgroundColor = Color.FromArgb(240, 240, 240);
+        diagram.HScroll = diagram.VScroll = false;
+        return Phase2Cards.Live(diagram, s => spinner.RotationAngle = (float)(s.Ramp * 3.6));
     }
 }

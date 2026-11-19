@@ -40,7 +40,8 @@ public class Odometer : Control
         set
         {
             _value = Math.Max(0, value);
-            if (Math.Abs(_value - _displayed) > 1e-9) _timer.Start();
+            if (!Animation.Enabled) { _displayed = _value; Invalidate(); }
+            else if (Math.Abs(_value - _displayed) > 1e-9) _timer.Start();
         }
     }
 

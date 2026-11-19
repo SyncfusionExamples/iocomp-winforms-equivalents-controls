@@ -363,12 +363,12 @@ public static class Phase2Cards
             () => FixedSize(IocompClock()));
 
         Add("SevenSegmentClock",
-            () => Digit(s => DateTime.Now.ToString("HH:mm:ss"), 8),
-            () => Digit(s => DateTime.Now.ToString("HH:mm:ss"), 8, styled: true));
+            () => Digit(s => s.Now.ToString("HH:mm:ss"), 8),
+            () => Digit(s => s.Now.ToString("HH:mm:ss"), 8, styled: true));
 
         Add("SevenSegmentClockSmpte",
-            () => Digit(s => $"{DateTime.Now:HH:mm:ss}:{DateTime.Now.Millisecond * 25 / 1000:00}", 11),
-            () => Digit(s => $"{DateTime.Now:HH:mm:ss}:{DateTime.Now.Millisecond * 25 / 1000:00}", 11, styled: true));
+            () => Digit(s => $"{s.Now:HH:mm:ss}:{s.Now.Millisecond * 25 / 1000:00}", 11),
+            () => Digit(s => $"{s.Now:HH:mm:ss}:{s.Now.Millisecond * 25 / 1000:00}", 11, styled: true));
     }
 
     // iocomp ClockAnalog: round grey face with a light rim, white numerals, tapered silver hands, thin white second hand.
@@ -403,6 +403,13 @@ public static class Phase2Cards
             round.AddEllipse(0, 0, clock.Width - 6, clock.Height - 6);
             clock.Region = new Region(round);
         }
+        if (SignalSimulator.Shared.IsFrozen)
+        {
+            // Snapshot mode: show the fixed time so regression images are repeatable.
+            clock.ShowCustomTimeClock = true;
+            clock.CustomTime = SignalSimulator.Shared.Now;
+            clock.StopTimer = true;
+        }
         clock.Location = new Point(4, 4);
         var host = new Panel();
         host.Controls.Add(clock);
@@ -411,31 +418,43 @@ public static class Phase2Cards
 
     // ---------------------------------------------------------------- Inputs
 
+    // iocomp Display* look (from the reference images): cyan text on black, thin grey frame. Properties only.
+    private static TextBoxExt IocompDisplay() => new()
+    {
+        ReadOnly = true,
+        TextAlign = HorizontalAlignment.Center,
+        Font = new Font("Segoe UI", 16f),
+        BackColor = Color.Black,
+        ForeColor = Color.Cyan,
+        BorderStyle = BorderStyle.FixedSingle,
+        BorderColor = Color.FromArgb(160, 160, 160),
+    };
+
     private static void RegisterInputs()
     {
         Add("DisplayDouble", () =>
         {
-            var t = new TextBoxExt { ReadOnly = true, TextAlign = HorizontalAlignment.Center, Font = new Font("Segoe UI", 16f) };
+            var t = IocompDisplay();
             return Live(t, s =>
             {
-                t.Text = s.Sine.ToString("0.00");
-                t.BackColor = s.Sine > 85 ? Color.MistyRose : Color.White; // alarm colour by code
+                t.Text = (s.Sine * 100).ToString("0.00");
+                t.ForeColor = s.Sine > 85 ? Color.Red : Color.Cyan; // alarm colour by code
             });
         });
 
         Add("DisplayInteger", () =>
         {
-            var t = new TextBoxExt { ReadOnly = true, TextAlign = HorizontalAlignment.Center, Font = new Font("Segoe UI", 16f) };
+            var t = IocompDisplay();
             return Live(t, s =>
             {
-                t.Text = ((int)s.Sine).ToString();
-                t.BackColor = s.Sine > 85 ? Color.MistyRose : Color.White;
+                t.Text = ((int)(s.Sine * 100)).ToString();
+                t.ForeColor = s.Sine > 85 ? Color.Red : Color.Cyan;
             });
         });
 
         Add("DisplayString", () =>
         {
-            var t = new TextBoxExt { ReadOnly = true, TextAlign = HorizontalAlignment.Center, Font = new Font("Segoe UI", 16f) };
+            var t = IocompDisplay();
             return Live(t, s => t.Text = s.Step ? "RUNNING" : "IDLE");
         });
 
@@ -468,14 +487,40 @@ public static class Phase2Cards
 
         Add("Slider",
             () => NewTrackBar(Orientation.Horizontal),
-            () =>
+            () => ScaledSlider());
+    }
+
+    // iocomp Slider: vertical TrackBarEx (thumb, value, events unchanged) with a "0.0".."100.0" scale painted beside it.
+    // TrackBarEx has no scale of its own, so the scale is a small owner-drawn panel aligned to the track.
+    private static Control ScaledSlider()
+    {
+        var bar = NewTrackBar(Orientation.Vertical);
+        bar.ShowButtons = false;
+        bar.Dock = DockStyle.Left;
+        bar.Width = 26;
+        bar.TrackBarGradientStart = bar.TrackBarGradientEnd = Color.White;
+        bar.ButtonColor = Color.FromArgb(240, 240, 240);
+        var scale = new Panel { Dock = DockStyle.Left, Width = 70 };
+        scale.Paint += (_, e) =>
+        {
+            var g = e.Graphics;
+            using var pen = new Pen(Color.Black);
+            using var font = new Font("Segoe UI", 8.5f);
+            var inset = bar.SliderSize.Height / 2f + 2;
+            float top = inset, bottom = scale.Height - inset;
+            var h = font.GetHeight(g);
+            for (var v = bar.Minimum; v <= bar.Maximum; v += 4)
             {
-                var t = NewTrackBar(Orientation.Vertical);
-                t.ButtonColor = Color.FromArgb(40, 120, 220);
-                t.TrackBarGradientStart = Color.FromArgb(40, 44, 52);
-                t.TrackBarGradientEnd = Color.FromArgb(18, 20, 24);
-                return t;
-            });
+                var y = bottom - (v - bar.Minimum) / (float)(bar.Maximum - bar.Minimum) * (bottom - top);
+                var major = v % 20 == 0;
+                g.DrawLine(pen, 2, y, major ? 12 : 7, y);
+                if (major) g.DrawString(v.ToString("0.0"), font, Brushes.Black, 14, y - h / 2);
+            }
+        };
+        var host = new Panel { AccessibleName = "Slider with scale" };
+        host.Controls.Add(scale);
+        host.Controls.Add(bar);
+        return host;
     }
 
     private static TrackBarEx NewTrackBar(Orientation o) =>

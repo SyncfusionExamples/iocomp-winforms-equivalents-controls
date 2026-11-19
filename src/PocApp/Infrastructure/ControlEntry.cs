@@ -32,7 +32,7 @@ public sealed record ControlEntry(
     bool FrCandidate,            // internal only
     string? FrTitle,             // internal only
     string InternalNotes,        // internal only
-    bool BuiltInPoc = false)     // one of the five HmiControls prototypes
+    bool BuiltInPoc = false)     // a working HmiControls prototype exists
 {
     public Fidelity Fidelity { get; init; } = Fidelity.Unverified;
 

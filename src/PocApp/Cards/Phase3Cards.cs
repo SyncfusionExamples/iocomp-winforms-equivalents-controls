@@ -20,7 +20,7 @@ public static class Phase3Cards
         // PercentBar (E): default = 100% stacked columns; restyled = 100% stacked horizontal bars with a palette.
         Phase2Cards.Add("PercentBar",
             () => Stacked(ChartSeriesType.StackingColumn100, ChartColorPalette.Default),
-            () => Stacked(ChartSeriesType.StackingBar100, ChartColorPalette.Metro));
+            () => PercentColumn());
 
         // PercentPie (A)
         Phase2Cards.Add("PercentPie", Pie);
@@ -222,6 +222,40 @@ public static class Phase3Cards
             for (var i = 0; i < cats.Length; i++) series.Points.Add(cats[i], data[s][i]);
             chart.Series.Add(series);
         }
+        return chart;
+    }
+
+    // iocomp PercentBar: one 100% stacked column (red / yellow / orange, cylinder-shaded), legend on the right, no axes.
+    private static ChartControl PercentColumn()
+    {
+        var chart = NewChart(legend: true);
+        chart.Legend.Position = ChartDock.Right;
+        chart.Legend.ShowBorder = false;
+        chart.Legend.ItemsSize = new Size(16, 16);
+        chart.Legend.Font = new Font("Segoe UI", 10f);
+        chart.PrimaryXAxis.ValueType = ChartValueType.Category;
+        chart.PrimaryXAxis.IsVisible = false;
+        chart.PrimaryYAxis.IsVisible = false;
+        chart.PrimaryXAxis.DrawGrid = false;
+        chart.PrimaryYAxis.DrawGrid = false;
+        chart.ChartArea.BorderWidth = 0;
+        chart.ChartArea.BorderColor = Color.Transparent;
+        chart.ChartArea.BorderStyle = BorderStyle.None;
+        var face = new BrushInfo(Color.FromArgb(240, 240, 240));
+        chart.BackInterior = chart.ChartArea.BackInterior = chart.ChartArea.GridBackInterior = chart.Legend.BackInterior = face;
+        chart.ColumnWidthMode = ChartColumnWidthMode.FixedWidthMode;
+        chart.ColumnFixedWidth = 70; // one wide column, like the iocomp bar
+
+        (string Name, double Value, Color Color)[] items = [("Item 3", 80, Color.Orange), ("Item 2", 15, Color.Yellow), ("Item 1", 5, Color.Red)];
+        foreach (var (name, value, color) in items)
+        {
+            var s = NewSeries(name, ChartSeriesType.StackingColumn100, color);
+            s.Points.Add("Total", value);
+            s.ConfigItems.ColumnItem.ShadingMode = ChartColumnShadingMode.PhongCylinder; // cylinder shading
+            chart.Series.Add(s);
+        }
+        // Series are added bottom-up for stacking, so the legend lists Item 3 first; iocomp lists Item 1 first.
+        // No legend-order option was found in 35.2.12, so this difference is recorded in the register.
         return chart;
     }
 

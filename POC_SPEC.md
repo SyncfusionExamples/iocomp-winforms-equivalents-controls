@@ -1,6 +1,6 @@
 # POC Spec: iocomp -> Syncfusion WinForms Consolidated Demo
 
-Status: **IMPLEMENTED.** Phases 0-6 are done, followed by a visual-fidelity pass (section 7, phase 7).
+Status: **IMPLEMENTED.** Phases 0-6 are done, followed by a visual-fidelity pass (phase 7) and a second pass that removed the last placeholders and added repeatable checks (phase 8).
 This file is the original plan with the deviations marked inline; the current results are in `GAP_ANALYSIS.md`,
 and the next steps in `docs/IMPROVEMENT_PROPOSAL.md`.
 Companion to `GAP_ANALYSIS.md` (control-by-control matrix and iocomp image observations).
@@ -112,15 +112,15 @@ Design rules:
 | Inputs | Slider | `TrackBarEx` | E |
 | Switches | SwitchToggle / SwitchLed | `ToggleButton` + custom `IToggleButtonRenderer` (paddle / LED caption) | E |
 | Switches | SwitchRotary | **Built:** `HmiControls.SwitchRotary` (mouse/keyboard, `ValueChanged`) | N (built) |
-| Switches | Panel, Lever, Rocker, Rocker3Way, Slider, Quad | Rocker: `ToggleButton` + renderer; Rocker3Way / Lever: `CheckBoxAdv` + `OnPaint`; Slider: `TrackBarEx`; Panel, Quad: placeholder | N |
+| Switches | Panel, Lever, Rocker, Rocker3Way, Slider, Quad | Rocker: `ToggleButton` + renderer; Rocker3Way / Lever: `CheckBoxAdv` + `OnPaint`; **phase 8:** Panel, Slider, Quad built as `HmiControls` prototypes on a shared `SelectorSwitch` base | N |
 | LEDs | Led | **Built:** `HmiControls.Led` (color, on/off, glossy style) | N (built) |
-| LEDs | LedArrow, MatrixLeds | placeholder (optionally a colored `Panel`) | N |
+| LEDs | LedArrow, MatrixLeds | ~~placeholder~~ **phase 8:** built as `HmiControls.LedArrow` and `HmiControls.MatrixLeds` | N (built) |
 | LEDs | MatrixButtons, PhonePad | `ButtonAdv` grid in `TableLayoutPanel` | E |
 | Process | Pipe, Valve | **Built:** `HmiControls.Pipe` (animated flow direction/speed) and `HmiControls.Valve` (open/closed, click), combined in one small process scene | N (built) |
-| Process | PipeJoint, Motor | placeholder | N |
+| Process | PipeJoint, Motor | ~~placeholder~~ **phase 8:** built as `HmiControls.PipeJoint` and `HmiControls.Motor` | N (built) |
 | Process | ObjectCanvas | `Diagram` (shapes, text, rotation) | E |
 | Process | SlidingScale / SlidingCompass | `LinearGauge` + custom `ILinearGaugeRenderer` (scrolling tape) | N |
-| Process | RotationDisplay | needs small custom drawing, placeholder | N |
+| Process | RotationDisplay | ~~placeholder~~ **phase 8:** built as `HmiControls.RotationDisplay` | N (built) |
 
 Note: RotationDisplay is rated N because it needs custom drawing and is not one of the five built controls.
 Counts: 5 N controls are built, about 14 N controls are described only (grouped rows in `GAP_ANALYSIS.md` mean the exact number is confirmed when the catalog has its 56 rows).
@@ -170,6 +170,7 @@ Priority rule: P1 = common in HMI/instrument apps and blocks migration; P2 = vis
 | 5 | **(DONE: all 56 catalog entries now have a card; new E cards verified by render only; register exports generated into docs/)** Remaining N cards | Badge, stand-in or placeholder, and register entry for every other N control | Every N card has one of each; estimates extrapolated from the measured five |
 | 6 | **(DONE: GAP_ANALYSIS.md rewritten as the final report; PercentBar fixed; interaction tested with synthetic input only)** Register and report | Both generated documents, updated `GAP_ANALYSIS.md` with verified ratings and screenshots | No "(verify)" left; effort source (measured vs estimate) labelled on every N entry |
 | 7 | **(DONE)** Visual-fidelity pass | Prototypes redrawn from iocomp pixel samples; Plot, gauges, switches, digital and clocks restyled; Tank and sliding tapes as LinearGauge + renderer; Approach and Look per control on cards, register page and exports; snapshots and docs regenerated | Every card scored for look. **Open:** second reviewer for the scores; real-mouse re-test of Knob and new switches; High DPI |
+| 8 | **(DONE)** Second pass (from `docs/IMPROVEMENT_PROPOSAL.md`) | Git repository; repeatable rendering and `--compare` visual regression check; `--selftest` scripted interaction checks (15/15); the 7 "different" views fixed; the 7 placeholders built as `HmiControls` prototypes; Rocker3Way half-press; catalog, exports and docs regenerated | No placeholders; look 41 close / 15 acceptable / 0 different. **Open:** real-mouse pass, second reviewer, High DPI, license-key rerun |
 
 Each phase ends with a clean `dotnet build` and the app launched. Work proceeds one page at a time.
 
@@ -187,7 +188,7 @@ Each phase ends with a clean `dotnet build` and the app launched. Work proceeds 
 - **Preview SDK:** preview.4 may not work with current Syncfusion packages built for final .NET 10. Phase 0 tests this first; fallback options are SDK 11.0.100 or a stable .NET 10 install.
 - **Unverified ratings:** several E ratings (DigitalGauge dot-matrix and unlit segments, RadialGauge interactive pointer, LinearGauge tube/bulb styling, Clock styling) are assumptions until built. **RESOLVED:** all built and verified by render; tube/bulb and Clock needed custom renderers.
 - **Effort estimates for unbuilt N controls are extrapolated** from five built ones. Label them clearly and give ranges to the customer.
-- **Weaker demo for unbuilt N controls:** about 14 show stand-ins or placeholders, not working controls. A second phase can build more if the customer asks. **REDUCED:** 7 now have close-looking stand-ins; 7 placeholders remain.
+- **Weaker demo for unbuilt N controls:** about 14 show stand-ins or placeholders, not working controls. A second phase can build more if the customer asks. **RESOLVED in phase 8:** no placeholders remain; 13 N controls are built prototypes and 6 are custom-drawn stand-ins on Syncfusion controls.
 - **Look of the built controls:** matching iocomp's glossy style costs more drawing time. Decide per control how close to go, and record that in the effort figure.
 - **Visual fidelity:** iocomp is glossy and skeuomorphic; Syncfusion themes are flatter. Set expectations as "equivalent function, not pixel identical".
 - **Scope:** 56 cards is large. Phase order puts the highest-risk items (Plot, gauges) first.

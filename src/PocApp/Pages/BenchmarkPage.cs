@@ -37,6 +37,8 @@ public sealed class BenchmarkPage : UserControl
             Caption("Type"), _type, _improve, _run, _status]);
 
         _chart.Legend.Visible = false;
+        // A ChartControl with no series draws random sample columns; an empty series keeps the idle chart blank.
+        _chart.Series.Add(new ChartSeries("Idle", ChartSeriesType.Line));
         Controls.Add(_chart);
         Controls.Add(bar);
     }

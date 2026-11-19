@@ -28,10 +28,37 @@ internal static class Program
             return;
         }
 
-        var form = new MainForm();
         var snapshotArg = Array.IndexOf(args, "--snapshots");
+        var compareArg = Array.IndexOf(args, "--compare");
+        var selfTestArg = Array.IndexOf(args, "--selftest");
+        var renderOnly = (snapshotArg >= 0 && snapshotArg + 1 < args.Length) || (compareArg >= 0 && compareArg + 2 < args.Length);
+        if (renderOnly || selfTestArg >= 0)
+        {
+            // Repeatable output: fixed signal values, fixed clock time, no free-running animations.
+            Infrastructure.SignalSimulator.Shared.Freeze(now: new DateTime(2026, 1, 1, 10, 9, 30));
+            HmiControls.Animation.Enabled = false;
+        }
+
+        if (selfTestArg >= 0 && selfTestArg + 1 < args.Length)
+        {
+            Environment.ExitCode = Infrastructure.InteractionSelfTest.Run(args[selfTestArg + 1]);
+            return;
+        }
+
+        var form = new MainForm();
         if (snapshotArg >= 0 && snapshotArg + 1 < args.Length)
             form.SaveSnapshots(args[snapshotArg + 1]);
+        if (compareArg >= 0 && compareArg + 2 < args.Length)
+        {
+            var baseline = args[compareArg + 1];
+            var current = args[compareArg + 2];
+            form.SaveSnapshots(current, () =>
+            {
+                var results = Infrastructure.SnapshotComparer.Compare(baseline, current);
+                File.WriteAllText(Path.Combine(current, "COMPARE.md"), Infrastructure.SnapshotComparer.Report(results, baseline, current));
+                Environment.ExitCode = results.Any(r => !r.Status.StartsWith("PASS")) ? 1 : 0;
+            });
+        }
         var benchArg = Array.IndexOf(args, "--benchmark");
         if (benchArg >= 0 && benchArg + 1 < args.Length)
             form.RunBenchmarkMatrix(args[benchArg + 1], 6, Array.IndexOf(args, "--improve") >= 0);

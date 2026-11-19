@@ -70,20 +70,27 @@ public sealed class MainForm : Form
         };
     }
 
-    /// <summary>Verification aid: renders every tab to a PNG in <paramref name="folder"/> and closes the form.</summary>
-    public void SaveSnapshots(string folder)
+    /// <summary>
+    /// Verification aid: renders every tab to a PNG in <paramref name="folder"/>, then runs <paramref name="after"/> and closes.
+    /// Expects the simulator to be frozen (see Program) so the images are repeatable.
+    /// </summary>
+    public void SaveSnapshots(string folder, System.Action? after = null)
     {
         Directory.CreateDirectory(folder);
         Shown += async (_, _) =>
         {
             try
             {
-                await Task.Delay(1500); // let the simulator tick so live values are visible
+                // 188 fixed ticks = 9.4 s of signal: charts have history, Step is on (lit LEDs, running motor),
+                // and Sine is ~51 (below the 85 alarm threshold), so the pictures show normal operation.
+                SignalSimulator.Shared.StepFrozen(188);
+                await Task.Delay(800);
                 foreach (TabPage page in Tabs.TabPages)
                 {
                     Tabs.SelectedTab = page;
+                    SignalSimulator.Shared.Pulse();
                     page.Refresh();
-                    await Task.Delay(700);
+                    await Task.Delay(500);
                     var name = new string(page.Text.Where(char.IsLetterOrDigit).ToArray());
                     var cards = page.Controls[0].Controls.OfType<FlowLayoutPanel>().FirstOrDefault()?.Controls.OfType<ControlCard>().ToList();
                     if (cards is null || cards.Count == 0)
@@ -108,10 +115,12 @@ public sealed class MainForm : Form
                     }
                     full.Save(Path.Combine(folder, name + ".png"));
                 }
+                after?.Invoke();
             }
             catch (Exception ex)
             {
                 File.WriteAllText(Path.Combine(folder, "ERROR.txt"), ex.ToString());
+                Environment.ExitCode = 2;
             }
             finally
             {

@@ -136,14 +136,45 @@ internal sealed class IocompToggleRenderer(ToggleLook look) : IToggleButtonRende
     }
 }
 
-/// <summary>CheckBoxAdv painted as the iocomp three-way rocker: up = Checked, centre = Indeterminate, down = Unchecked.</summary>
+/// <summary>
+/// CheckBoxAdv painted as the iocomp three-way rocker: up = Checked, centre = Indeterminate, down = Unchecked.
+/// Like a real rocker, pressing a half moves one step toward it (down -> centre -> up, or the reverse);
+/// Up/Down arrow keys do the same. CheckBoxAdv's own click cycling is turned off (AutoCheck = false).
+/// </summary>
 internal sealed class Rocker3WayBox : CheckBoxAdv
 {
     public Rocker3WayBox()
     {
         Tristate = true;
+        AutoCheck = false;
         Text = "";
         SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.ResizeRedraw, true);
+    }
+
+    /// <summary>Moves one position toward the top (up = true) or bottom half.</summary>
+    public void Press(bool up) => CheckState = (CheckState, up) switch
+    {
+        (CheckState.Unchecked, true) => CheckState.Indeterminate,
+        (CheckState.Indeterminate, true) => CheckState.Checked,
+        (CheckState.Checked, false) => CheckState.Indeterminate,
+        (CheckState.Indeterminate, false) => CheckState.Unchecked,
+        _ => CheckState,
+    };
+
+    protected override void OnMouseUp(MouseEventArgs e)
+    {
+        base.OnMouseUp(e);
+        if (e.Button != MouseButtons.Left || !ClientRectangle.Contains(e.Location)) return;
+        var r = SwitchDraw.Fit(ClientRectangle, 138f / 256);
+        Press(up: e.Y < r.Top + r.Height / 2);
+    }
+
+    protected override bool IsInputKey(Keys keyData) => keyData is Keys.Up or Keys.Down || base.IsInputKey(keyData);
+
+    protected override void OnKeyDown(KeyEventArgs e)
+    {
+        if (e.KeyCode is Keys.Up or Keys.Down) { Press(up: e.KeyCode == Keys.Up); e.Handled = true; return; }
+        base.OnKeyDown(e);
     }
 
     protected override void OnPaint(PaintEventArgs e)
